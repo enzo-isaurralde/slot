@@ -29,4 +29,24 @@ class GameConfigServiceTest {
         assertEquals(5, config.getReelStrips().size(), "Deben ser 5 rodillos");
         assertFalse(config.getBonusConfigs().isEmpty(), "Debe haber config de bonus");
     }
+
+    @Test
+    void debeTenerLas10PaylinesCargadasCorrectamente() {
+        // 1. Traemos la configuración de la base de datos
+        GameConfig config = gameConfigService.cargarConfiguracion("SLOT_MILITAR");
+
+        // 2. Buscamos la línea número 1
+        var linea1 = config.getPaylines().stream()
+                .filter(p -> p.getNumero() == 1)
+                .findFirst()
+                .orElseThrow(() -> new RuntimeException("No se encontró la payline 1"));
+
+        // 3. Verificamos que sea la "recta del medio" según el PDF
+        // (fila 1 en todos los rodillos)
+        assertEquals(1, linea1.getR1());
+        assertEquals(1, linea1.getR2());
+        assertEquals(1, linea1.getR3());
+        assertEquals(1, linea1.getR4());
+        assertEquals(1, linea1.getR5());
+    }
 }
