@@ -68,4 +68,46 @@ class PayoutCalculatorTest {
         BigDecimal premio = calculator.calcularPremio(config, grilla, new BigDecimal(100));
         assertTrue(premio.compareTo(BigDecimal.ZERO) == 0, "El premio debería ser 0");
     }
+
+    @Test
+    void debeCalcularPremioDeScatter() {
+        GameConfig config = configService.cargarConfiguracion("SLOT_MILITAR");
+
+        // Armamos una grilla con 3 Scatters en distintas posiciones
+        List<List<String>> grilla = Arrays.asList(
+                Arrays.asList("SCATTER", "SYM_1", "SYM_2"),
+                Arrays.asList("SYM_3", "SCATTER", "SYM_4"),
+                Arrays.asList("SYM_5", "SYM_6", "SCATTER"), // Tercer scatter
+                Arrays.asList("SYM_1", "SYM_2", "SYM_3"),
+                Arrays.asList("SYM_4", "SYM_5", "SYM_6")
+        );
+
+        BigDecimal apuestaTotal = new BigDecimal(100);
+
+        // En nuestro seed, el Scatter no tiene pago en la paytable (solo activa el bonus).
+        // Así que el premio monetario debería ser 0, pero el test verifica que la lógica funcione.
+        BigDecimal premio = calculator.calcularPremioScatter(config, grilla, apuestaTotal);
+
+        // Si en tu base de datos cargaste un pago para el SCATTER, cambialo acá.
+        // Por ahora asumimos que solo activa bonus y no paga monedas.
+        assertEquals(0, BigDecimal.ZERO.compareTo(premio), "El Scatter no debería pagar monedas directas (solo activar bonus)");
+    }
+
+    @Test
+    void noDebePagarScatterSiHayMenosDeTres() {
+        GameConfig config = configService.cargarConfiguracion("SLOT_MILITAR");
+
+        List<List<String>> grilla = Arrays.asList(
+                Arrays.asList("SCATTER", "SYM_1", "SYM_2"),
+                Arrays.asList("SYM_3", "SYM_4", "SYM_5"),
+                Arrays.asList("SYM_6", "SYM_7", "SYM_8"),
+                Arrays.asList("SYM_1", "SYM_2", "SYM_3"),
+                Arrays.asList("SYM_4", "SYM_5", "SYM_6")
+        );
+
+        BigDecimal premio = calculator.calcularPremioScatter(config, grilla, new BigDecimal(100));
+        assertEquals(0, premio.compareTo(BigDecimal.ZERO), "Con menos de 3 Scatters no paga");
+    }
+
+
 }

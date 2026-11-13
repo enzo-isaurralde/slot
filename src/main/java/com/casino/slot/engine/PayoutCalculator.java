@@ -49,6 +49,42 @@ public class PayoutCalculator {
         return premioTotal;
     }
 
+    /**
+     * Calcula el premio del Scatter. A diferencia de las líneas, el Scatter
+     * paga por cantidad en TODA la grilla (sin importar la posición).
+     *
+     * @param config La configuración del juego.
+     * @param grilla La grilla generada.
+     * @param apuestaTotal La apuesta total del giro.
+     * @return El premio del Scatter (0 si no hay suficientes).
+     */
+    public BigDecimal calcularPremioScatter(GameConfig config, List<List<String>> grilla, BigDecimal apuestaTotal) {
+        // 1. Contamos cuántos Scatters hay en toda la grilla (15 casillas)
+        int contadorScatters = 0;
+        for (List<String> rodillo : grilla) {
+            for (String simbolo : rodillo) {
+                if (simbolo.equals("SCATTER")) {
+                    contadorScatters++;
+                }
+            }
+        }
+
+        // 2. Si hay menos de 3, no paga nada
+        if (contadorScatters < 3) {
+            return BigDecimal.ZERO;
+        }
+
+        // 3. Buscamos en la paytable cuánto paga el Scatter con esa cantidad
+        BigDecimal multiplicador = buscarMultiplicador(config.getPaytable(), "SCATTER", contadorScatters);
+
+        if (multiplicador == null) {
+            return BigDecimal.ZERO; // Si no está configurado, no paga
+        }
+
+        // 4. El Scatter paga sobre la apuesta TOTAL (no por línea)
+        return multiplicador.multiply(apuestaTotal);
+    }
+
     // --- Métodos auxiliares (similares al PaylineEvaluator) ---
 
     private String evaluarLinea(List<List<String>> grilla, Payline payline) {
