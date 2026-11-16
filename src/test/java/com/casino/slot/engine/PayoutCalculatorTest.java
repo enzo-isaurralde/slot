@@ -109,5 +109,32 @@ class PayoutCalculatorTest {
         assertEquals(0, premio.compareTo(BigDecimal.ZERO), "Con menos de 3 Scatters no paga");
     }
 
+    @Test
+    void debeCalcularPremioConMultiplesLineasGanadoras() {
+        GameConfig config = configService.cargarConfiguracion("SLOT_MILITAR");
+
+        // Grilla diseñada para que ganen la Línea 1 (medio) y la Línea 2 (arriba)
+        List<List<String>> grilla = Arrays.asList(
+                // Rodillo 1: arr=SYM_2, med=SYM_1, abj=X
+                Arrays.asList("SYM_2", "SYM_1", "SYM_3"),
+                // Rodillo 2: arr=SYM_2, med=SYM_1, abj=X
+                Arrays.asList("SYM_2", "SYM_1", "SYM_4"),
+                // Rodillo 3: arr=SYM_2, med=SYM_1, abj=X
+                Arrays.asList("SYM_2", "SYM_1", "SYM_5"),
+                // Rodillo 4: arr=SYM_3, med=SYM_2, abj=X (corta la línea del medio, pero la de arriba sigue)
+                Arrays.asList("SYM_3", "SYM_2", "SYM_6"),
+                // Rodillo 5: arr=SYM_4, med=SYM_3, abj=X
+                Arrays.asList("SYM_4", "SYM_3", "SYM_7")
+        );
+
+        BigDecimal apuestaTotal = new BigDecimal(100);
+        BigDecimal premio = calculator.calcularPremio(config, grilla, apuestaTotal);
+
+        // Línea 1 (medio): 3 de SYM_1 -> paga x2 -> 10 * 2 = 20
+        // Línea 2 (arriba): 3 de SYM_2 -> paga x2 -> 10 * 2 = 20
+        // Total esperado: 40
+        assertEquals(0, new BigDecimal(40).compareTo(premio), "El premio total debería ser 40 (20 de cada línea)");
+    }
+
 
 }

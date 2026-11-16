@@ -140,4 +140,5 @@ public class PayoutCalculator {
                 .findFirst()
                 .orElse(null);
     }
+
 }
