@@ -1,15 +1,17 @@
 package com.casino.slot.user;
 
+import com.casino.slot.wallet.WalletService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 @Service
-@RequiredArgsConstructor // <-- Usamos Lombok para el constructor
+@RequiredArgsConstructor
 public class UserService {
 
     private final UserRepository userRepository;
-    private final PasswordEncoder passwordEncoder; // <-- Inyectado por Spring
+    private final PasswordEncoder passwordEncoder;
+    private final WalletService walletService; // <-- NUEVO
 
     public User registrar(RegisterRequest request) {
         if (userRepository.findByUsername(request.getUsername()).isPresent()) {
@@ -21,7 +23,12 @@ public class UserService {
         user.setPassword(passwordEncoder.encode(request.getPassword()));
         user.setRole("PLAYER");
 
-        return userRepository.save(user);
+        User savedUser = userRepository.save(user);
+
+        // ¡ACÁ ESTÁ LA MAGIA! Creamos la billetera con saldo inicial
+        walletService.crearBilletera(savedUser.getId());
+
+        return savedUser;
     }
 
     public boolean autenticar(String username, String password) {

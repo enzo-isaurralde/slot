@@ -1,5 +1,6 @@
 package com.casino.slot.user;
 
+import com.casino.slot.wallet.WalletService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -13,6 +14,8 @@ class UserServiceTest {
 
     @Autowired
     private UserService userService;
+    @Autowired
+    private WalletService walletService;
 
     @Test
     void debeRegistrarYAutenticarUnUsuario() {
@@ -31,5 +34,9 @@ class UserServiceTest {
 
         // 3. Autenticamos con la contraseña incorrecta
         assertFalse(userService.autenticar("enzo", "incorrecta"));
+
+        // 4. Verificamos que el usuario nuevo tenga saldo inicial en su billetera
+        Long saldo = walletService.obtenerSaldo(user.getId());
+        assertEquals(10000L, saldo, "El usuario nuevo debe tener 10.000 de saldo inicial");
     }
 }
