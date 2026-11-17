@@ -1,17 +1,15 @@
 package com.casino.slot.user;
 
-import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import lombok.RequiredArgsConstructor;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 @Service
+@RequiredArgsConstructor // <-- Usamos Lombok para el constructor
 public class UserService {
 
     private final UserRepository userRepository;
-    private final BCryptPasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
-
-    public UserService(UserRepository userRepository) {
-        this.userRepository = userRepository;
-    }
+    private final PasswordEncoder passwordEncoder; // <-- Inyectado por Spring
 
     public User registrar(RegisterRequest request) {
         if (userRepository.findByUsername(request.getUsername()).isPresent()) {
