@@ -11,7 +11,7 @@ public class UserService {
 
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
-    private final WalletService walletService; // <-- NUEVO
+    private final WalletService walletService; // <-- Inyección
 
     public User registrar(RegisterRequest request) {
         if (userRepository.findByUsername(request.getUsername()).isPresent()) {
