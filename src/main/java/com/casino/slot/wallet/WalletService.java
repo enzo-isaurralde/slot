@@ -50,4 +50,9 @@ public class WalletService {
     public List<WalletTransaction> obtenerHistorial(Long walletId) {
         return transactionRepository.findByWalletIdOrderByCreatedAtDesc(walletId);
     }
+
+    public Wallet obtenerBilleteraPorUserId(Long userId) {
+        return walletRepository.findByUserId(userId)
+                .orElseThrow(() -> new RuntimeException("Billetera no encontrada"));
+    }
 }
