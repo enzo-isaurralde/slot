@@ -27,39 +27,55 @@ public class SpinService {
     private final WalletService walletService;
     private final SpinRepository spinRepository;
 
-    // Creamos el ObjectMapper manualmente (sin inyectarlo)
     private final ObjectMapper objectMapper = new ObjectMapper();
+
+    // Niveles de apuesta permitidos
+    private static final List<BigDecimal> APUESTAS_PERMITIDAS = List.of(
+            new BigDecimal(100),
+            new BigDecimal(200),
+            new BigDecimal(500),
+            new BigDecimal(1000)
+    );
 
     @Transactional
     public Spin girar(Long userId, String gameCode, BigDecimal betAmount) {
-        // 1. Verificamos que el juego existe
+        // 1. Validamos que la apuesta sea uno de los niveles permitidos
+        if (!APUESTAS_PERMITIDAS.contains(betAmount)) {
+            throw new RuntimeException("La apuesta debe ser 100, 200, 500 o 1000");
+        }
+
+        // 2. Verificamos que el juego existe y está activo
         Game game = gameRepository.findByCodigo(gameCode)
                 .orElseThrow(() -> new RuntimeException("Juego no encontrado"));
 
-        // 2. Verificamos el saldo del jugador
-        Wallet wallet = walletService.obtenerBilleteraPorUserId(userId);
-        if (wallet.getBalance() < betAmount.longValue()) {
-            throw new RuntimeException("Saldo insuficiente");
+        if (!game.getActivo()) {
+            throw new RuntimeException("El juego está desactivado");
         }
 
-        // 3. Descontamos la apuesta
+        // 3. Verificamos el saldo del jugador
+        Wallet wallet = walletService.obtenerBilleteraPorUserId(userId);
+        if (wallet.getBalance() < betAmount.longValue()) {
+            throw new RuntimeException("Saldo insuficiente. Tu saldo actual es: " + wallet.getBalance());
+        }
+
+        // 4. Descontamos la apuesta
         walletService.registrarMovimiento(wallet.getId(), "APUESTA", -betAmount.longValue(), "spin-pending");
 
-        // 4. Generamos la grilla
+        // 5. Generamos la grilla
         GameConfig config = gameConfigService.cargarConfiguracion(gameCode);
         List<List<String>> grilla = spinGenerator.generarGrilla(config);
 
-        // 5. Calculamos el premio
+        // 6. Calculamos el premio
         BigDecimal premio = payoutCalculator.calcularPremio(config, grilla, betAmount);
         BigDecimal premioScatter = payoutCalculator.calcularPremioScatter(config, grilla, betAmount);
         BigDecimal premioTotal = premio.add(premioScatter);
 
-        // 6. Acreditamos el premio
+        // 7. Acreditamos el premio
         if (premioTotal.compareTo(BigDecimal.ZERO) > 0) {
             walletService.registrarMovimiento(wallet.getId(), "PREMIO", premioTotal.longValue(), "spin-win");
         }
 
-        // 7. Guardamos el giro
+        // 8. Guardamos el giro
         Spin spin = new Spin();
         spin.setUserId(userId);
         spin.setGameId(game.getId());

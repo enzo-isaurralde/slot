@@ -34,35 +34,61 @@ class SpinServiceTest {
     @Autowired
     private WalletService walletService;
 
+    private User savedPlayer;
+
     @BeforeEach
-    void limpiarBaseDeDatos() {
+    void setUp() {
+        // Limpiamos la base
         spinRepository.deleteAll();
         walletRepository.deleteAll();
         userRepository.deleteAll();
-    }
 
-    @Test
-    void debeRealizarUnGiroCompleto() {
-        // 1. Creamos un usuario y su billetera
+        // Creamos un jugador para los tests
         User player = new User();
         player.setUsername("player_spin");
         player.setPassword("pass");
         player.setRole("PLAYER");
-        User savedPlayer = userRepository.save(player);
-        Wallet wallet = walletService.crearBilletera(savedPlayer.getId());
+        savedPlayer = userRepository.save(player);
+        walletService.crearBilletera(savedPlayer.getId());
+    }
 
-        // 2. Verificamos saldo inicial
-        assertEquals(10000L, wallet.getBalance());
-
-        // 3. Realizamos un giro de 100 centavos
+    @Test
+    void debeRealizarUnGiroCompleto() {
         Spin spin = spinService.girar(savedPlayer.getId(), "SLOT_MILITAR", new BigDecimal(100));
-
-        // 4. Verificamos que se guardó el giro
         assertNotNull(spin.getId());
         assertEquals(new BigDecimal(100), spin.getBetAmount());
+        assertNotEquals(10000L, walletService.obtenerSaldo(savedPlayer.getId()));
+    }
 
-        // 5. Verificamos que el saldo cambió (puede ser mayor o menor según el premio)
-        Long saldoFinal = walletService.obtenerSaldo(savedPlayer.getId());
-        assertNotEquals(10000L, saldoFinal);
+    @Test
+    void debeRechazarApuestaNoPermitida() {
+        RuntimeException exception = assertThrows(RuntimeException.class, () -> {
+            spinService.girar(savedPlayer.getId(), "SLOT_MILITAR", new BigDecimal(150));
+        });
+        assertEquals("La apuesta debe ser 100, 200, 500 o 1000", exception.getMessage());
+    }
+
+    @Test
+    void debeRechazarSaldoInsuficiente() {
+        // 1. Creamos un usuario con saldo bajo (solo 500 centavos)
+        User poorPlayer = new User();
+        poorPlayer.setUsername("poor_player");
+        poorPlayer.setPassword("pass");
+        poorPlayer.setRole("PLAYER");
+        User savedPoorPlayer = userRepository.save(poorPlayer);
+
+        // Creamos la billetera y le seteamos el saldo manualmente a 500
+        Wallet wallet = walletService.crearBilletera(savedPoorPlayer.getId());
+        wallet.setBalance(500L);
+        walletRepository.save(wallet);
+
+        // 2. Intentamos girar con una apuesta de 1000 (que es mayor al saldo de 500)
+        RuntimeException exception = assertThrows(RuntimeException.class, () -> {
+            spinService.girar(savedPoorPlayer.getId(), "SLOT_MILITAR", new BigDecimal(1000));
+        });
+
+        // 3. Verificamos que el mensaje sea el correcto
+        assertTrue(exception.getMessage().contains("Saldo insuficiente"),
+                "El mensaje debería contener 'Saldo insuficiente'");
     }
 }
