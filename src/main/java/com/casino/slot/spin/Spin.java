@@ -37,6 +37,9 @@ public class Spin {
     @Column(nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
+    @Column(unique = true, nullable = false)
+    private String idempotencyKey;
+
     @PrePersist
     public void prePersist() {
         this.createdAt = LocalDateTime.now();

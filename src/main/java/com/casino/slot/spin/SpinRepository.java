@@ -4,6 +4,9 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 
+import java.util.Optional;
+
 public interface SpinRepository extends JpaRepository<Spin, Long> {
     Page<Spin> findByUserIdOrderByCreatedAtDesc(Long userId, Pageable pageable);
+    Optional<Spin> findByIdempotencyKey(String idempotencyKey);
 }

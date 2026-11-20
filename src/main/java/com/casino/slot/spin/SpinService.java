@@ -15,6 +15,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.util.List;
+import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
@@ -29,7 +30,6 @@ public class SpinService {
 
     private final ObjectMapper objectMapper = new ObjectMapper();
 
-    // Niveles de apuesta permitidos
     private static final List<BigDecimal> APUESTAS_PERMITIDAS = List.of(
             new BigDecimal(100),
             new BigDecimal(200),
@@ -38,7 +38,13 @@ public class SpinService {
     );
 
     @Transactional
-    public Spin girar(Long userId, String gameCode, BigDecimal betAmount) {
+    public Spin girar(Long userId, String gameCode, BigDecimal betAmount, String idempotencyKey) {
+        // 0. Verificamos si ya existe un giro con este idempotencyKey
+        Optional<Spin> existingSpin = spinRepository.findByIdempotencyKey(idempotencyKey);
+        if (existingSpin.isPresent()) {
+            return existingSpin.get();
+        }
+
         // 1. Validamos que la apuesta sea uno de los niveles permitidos
         if (!APUESTAS_PERMITIDAS.contains(betAmount)) {
             throw new RuntimeException("La apuesta debe ser 100, 200, 500 o 1000");
@@ -83,6 +89,7 @@ public class SpinService {
         spin.setWinAmount(premioTotal);
         spin.setIsBonus(false);
         spin.setBalanceAfter(walletService.obtenerSaldo(userId));
+        spin.setIdempotencyKey(idempotencyKey); // <-- NUEVO
 
         try {
             spin.setGridJson(objectMapper.writeValueAsString(grilla));
