@@ -56,4 +56,38 @@ class FreeSpinsFeatureTest {
 
         assertFalse(freeSpinsFeature.isActivado(config, grilla));
     }
+
+    @Test
+    void debeOtorgar15GirosConCuatroScatters() {
+        GameConfig config = configService.cargarConfiguracion("SLOT_MILITAR");
+
+        // Grilla con 4 Scatters
+        List<List<String>> grilla = Arrays.asList(
+                Arrays.asList("SCATTER", "SYM_1", "SYM_2"),
+                Arrays.asList("SYM_3", "SCATTER", "SYM_4"),
+                Arrays.asList("SYM_5", "SYM_6", "SCATTER"),
+                Arrays.asList("SYM_1", "SCATTER", "SYM_3"), // Cuarto Scatter
+                Arrays.asList("SYM_4", "SYM_5", "SYM_6")
+        );
+
+        assertTrue(freeSpinsFeature.isActivado(config, grilla));
+        assertEquals(15, freeSpinsFeature.getGirosOtorgados(config, grilla));
+    }
+
+    @Test
+    void debeOtorgar20GirosConCincoScatters() {
+        GameConfig config = configService.cargarConfiguracion("SLOT_MILITAR");
+
+        // Grilla con 5 Scatters
+        List<List<String>> grilla = Arrays.asList(
+                Arrays.asList("SCATTER", "SYM_1", "SYM_2"),
+                Arrays.asList("SYM_3", "SCATTER", "SYM_4"),
+                Arrays.asList("SYM_5", "SYM_6", "SCATTER"),
+                Arrays.asList("SYM_1", "SCATTER", "SYM_3"),
+                Arrays.asList("SYM_4", "SYM_5", "SCATTER") // Quinto Scatter
+        );
+
+        assertTrue(freeSpinsFeature.isActivado(config, grilla));
+        assertEquals(20, freeSpinsFeature.getGirosOtorgados(config, grilla));
+    }
 }

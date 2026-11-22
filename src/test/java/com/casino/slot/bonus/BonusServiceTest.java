@@ -115,4 +115,6 @@ class BonusServiceTest {
         // Debería tener 20 giros
         assertEquals(20, actualizada.getGirosRestantes());
     }
+
+
 }
