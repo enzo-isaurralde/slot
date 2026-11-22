@@ -54,4 +54,51 @@ public class BonusService {
 
         return bonusSessionRepository.save(session);
     }
+
+    /**
+     * Consume un giro del bonus aplicando el multiplicador al premio.
+     * @param sessionId ID de la sesión de bonus.
+     * @param premioBase Premio base del giro (sin multiplicador).
+     * @return La sesión actualizada.
+     */
+    @Transactional
+    public BonusSession consumirGiroConMultiplicador(Long sessionId, BigDecimal premioBase) {
+        BonusSession session = bonusSessionRepository.findById(sessionId)
+                .orElseThrow(() -> new RuntimeException("Sesión de bonus no encontrada"));
+
+        if (!session.getEstado().equals("ACTIVO")) {
+            throw new RuntimeException("La sesión de bonus ya está finalizada");
+        }
+
+        // Aplicamos el multiplicador al premio
+        BigDecimal premioConMultiplicador = premioBase.multiply(session.getMultiplicador());
+
+        session.setGirosRestantes(session.getGirosRestantes() - 1);
+        session.setPremioAcumulado(session.getPremioAcumulado().add(premioConMultiplicador));
+
+        if (session.getGirosRestantes() <= 0) {
+            session.setEstado("FINALIZADO");
+        }
+
+        return bonusSessionRepository.save(session);
+    }
+
+    /**
+     * Agrega giros extra a una sesión de bonus activa (retrigger).
+     * @param sessionId ID de la sesión.
+     * @param girosExtra Cantidad de giros a agregar.
+     * @return La sesión actualizada.
+     */
+    @Transactional
+    public BonusSession agregarGiros(Long sessionId, int girosExtra) {
+        BonusSession session = bonusSessionRepository.findById(sessionId)
+                .orElseThrow(() -> new RuntimeException("Sesión de bonus no encontrada"));
+
+        if (!session.getEstado().equals("ACTIVO")) {
+            throw new RuntimeException("No se puede hacer retrigger en una sesión finalizada");
+        }
+
+        session.setGirosRestantes(session.getGirosRestantes() + girosExtra);
+        return bonusSessionRepository.save(session);
+    }
 }
