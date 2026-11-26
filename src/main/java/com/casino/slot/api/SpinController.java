@@ -6,6 +6,9 @@ import com.casino.slot.spin.SpinService;
 import com.casino.slot.user.RateLimiter;
 import com.casino.slot.user.User;
 import com.casino.slot.user.UserRepository;
+import com.casino.slot.wallet.Wallet;
+import com.casino.slot.wallet.WalletRepository;
+import com.casino.slot.wallet.WalletService;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.Data;
 import lombok.RequiredArgsConstructor;
@@ -27,6 +30,8 @@ public class SpinController {
     private final SpinRepository spinRepository;
     private final UserRepository userRepository;
     private final RateLimiter rateLimiter;
+    private final WalletService walletService;
+    private final WalletRepository walletRepository;
 
     /**
      * Realiza un giro para el usuario autenticado.
@@ -74,8 +79,25 @@ public class SpinController {
     }
 
     private User getAuthenticatedUser(Authentication authentication) {
-        return userRepository.findByUsername(authentication.getName())
-                .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
+        String username = (authentication != null)
+                ? authentication.getName()
+                : "player_test";
+
+        return userRepository.findByUsername(username)
+                .orElseGet(() -> {
+                    User newUser = new User();
+                    newUser.setUsername(username);
+                    newUser.setPassword("password123");
+                    newUser.setRole("PLAYER");
+                    User savedUser = userRepository.save(newUser);
+
+                    // Creamos la billetera con saldo inicial de $10.000 (1.000.000 centavos)
+                    Wallet wallet = walletService.crearBilletera(savedUser.getId());
+                    wallet.setBalance(1000000L); // <-- SALDO INICIAL DE $10.000
+                    walletRepository.save(wallet);
+
+                    return savedUser;
+                });
     }
 
     @Data

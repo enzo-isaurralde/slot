@@ -16,6 +16,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.math.BigDecimal;
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
@@ -30,11 +31,12 @@ public class SpinService {
 
     private final ObjectMapper objectMapper = new ObjectMapper();
 
+    // Apuestas permitidas en CENTAVOS ($100, $200, $500, $1.000)
     private static final List<BigDecimal> APUESTAS_PERMITIDAS = List.of(
-            new BigDecimal(100),
-            new BigDecimal(200),
-            new BigDecimal(500),
-            new BigDecimal(1000)
+            new BigDecimal("10000"),
+            new BigDecimal("20000"),
+            new BigDecimal("50000"),
+            new BigDecimal("100000")
     );
 
     @Transactional
@@ -45,9 +47,9 @@ public class SpinService {
             return existingSpin.get();
         }
 
-        // 1. Validamos que la apuesta sea uno de los niveles permitidos
+        // 1. Validamos que la apuesta sea uno de los niveles permitidos (en centavos)
         if (!APUESTAS_PERMITIDAS.contains(betAmount)) {
-            throw new RuntimeException("La apuesta debe ser 100, 200, 500 o 1000");
+            throw new RuntimeException("La apuesta debe ser 100, 200, 500 o 1000 pesos (10000, 20000, 50000 o 100000 centavos)");
         }
 
         // 2. Verificamos que el juego existe y está activo
@@ -89,7 +91,7 @@ public class SpinService {
         spin.setWinAmount(premioTotal);
         spin.setIsBonus(false);
         spin.setBalanceAfter(walletService.obtenerSaldo(userId));
-        spin.setIdempotencyKey(idempotencyKey); // <-- NUEVO
+        spin.setIdempotencyKey(idempotencyKey);
 
         try {
             spin.setGridJson(objectMapper.writeValueAsString(grilla));

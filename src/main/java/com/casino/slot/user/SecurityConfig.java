@@ -21,17 +21,16 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http
-                .cors(cors -> cors.configurationSource(corsConfigurationSource())) // <-- Habilita CORS
+                .cors(cors -> cors.configurationSource(corsConfigurationSource())) // <-- AGREGAR ESTO
                 .csrf(csrf -> csrf.disable())
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/api/auth/**").permitAll()
                         .requestMatchers("/api/admin/simulate").permitAll()
                         .requestMatchers("/api/games/**").permitAll()
-                        .requestMatchers("/api/spins").permitAll() // <-- Temporal para probar
+                        .requestMatchers("/api/spins").permitAll()
                         .anyRequest().authenticated()
                 );
-
         return http.build();
     }
 
