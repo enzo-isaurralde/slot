@@ -8,6 +8,11 @@ import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.web.cors.CorsConfiguration;
+import org.springframework.web.cors.CorsConfigurationSource;
+import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
+
+import java.util.List;
 
 @Configuration
 @EnableWebSecurity
@@ -16,24 +21,31 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http
-                // 1. Desactivamos CSRF (porque es una API REST, no un formulario HTML)
+                .cors(cors -> cors.configurationSource(corsConfigurationSource())) // <-- Habilita CORS
                 .csrf(csrf -> csrf.disable())
-
-                // 2. No usamos sesiones (cada petición se autentica con el token)
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-
-                // 3. Configuramos las reglas de las rutas
                 .authorizeHttpRequests(auth -> auth
-                        // Rutas públicas (no requieren token)
                         .requestMatchers("/api/auth/**").permitAll()
-                        .requestMatchers("/api/admin/simulate").permitAll() // Dejamos el simulador libre para probar
-                        .requestMatchers("/api/games/**").permitAll() // Los juegos son públicos para que cualquiera vea la config
-
-                        // Cualquier otra ruta requiere autenticación
+                        .requestMatchers("/api/admin/simulate").permitAll()
+                        .requestMatchers("/api/games/**").permitAll()
+                        .requestMatchers("/api/spins").permitAll() // <-- Temporal para probar
                         .anyRequest().authenticated()
                 );
 
         return http.build();
+    }
+
+    @Bean
+    public CorsConfigurationSource corsConfigurationSource() {
+        CorsConfiguration config = new CorsConfiguration();
+        config.setAllowedOrigins(List.of("http://127.0.0.1:5500", "http://localhost:5500", "null"));
+        config.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
+        config.setAllowedHeaders(List.of("*"));
+        config.setAllowCredentials(true);
+
+        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
+        source.registerCorsConfiguration("/api/**", config);
+        return source;
     }
 
     @Bean
